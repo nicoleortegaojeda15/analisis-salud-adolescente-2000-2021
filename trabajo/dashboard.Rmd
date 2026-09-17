@@ -1,0 +1,710 @@
+---
+title: "Análisis de Indicadores de Salud Adolescente"
+output: flexdashboard::flex_dashboard
+runtime: shiny
+---
+
+```{r global, include=FALSE}
+library(MASS)
+library(shinydashboard)
+library(datasets)
+library(highcharter) 
+library(fpp3)
+library(RColorBrewer)
+library(openxlsx)  
+library(leaflet)  
+library(geojsonio)
+library(plotly)
+library(ggplot2)
+library(tidyverse)
+library(bslib)
+pdf(file = NULL) # evita errores al hacer el box-cox en shiny 
+```
+
+```{r}
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE,
+  cache=FALSE,
+  echo=FALSE
+)
+```
+
+
+```{r,message=FALSE,echo=FALSE} 
+
+adolescentes <- read.xlsx("Table-5-Adolescent-health-SOWC2023 (1).xlsx", startRow = 4) %>%
+  dplyr::mutate(`Adolescent.mortality.rate.2021.aged.10.to.19` = as.numeric(`Adolescent.mortality.rate.2021.aged.10.to.19`), 
+    `Adolescent.deaths.2021.aged.10.to.19`= as.numeric(`Adolescent.deaths.2021.aged.10.to.19`), 
+    `Annual.rate.of.reduction.in.the.adolescent.mortality.rate.2000–2021.aged.10.to.19` = as.numeric(`Annual.rate.of.reduction.in.the.adolescent.mortality.rate.2000–2021.aged.10.to.19`), 
+  `Adolescent.birth.rate.2016–2021.aged.10.to.14` = as.numeric(`Adolescent.birth.rate.2016–2021.aged.10.to.14`),                            `Adolescent.birth.rate.2016–2021.aged.15.to.19`= as.numeric(`Adolescent.birth.rate.2016–2021.aged.15.to.19`),
+  `Women.aged.20-24.years.who.gave.birth.before.age.18.(%).2016–2021` = as.numeric(`Women.aged.20-24.years.who.gave.birth.before.age.18.(%).2016–2021`), 
+  `Demand.for.family.planning.satisfied.with.modern.methods.aged.15.to.19.(%).2016–2021`= as.numeric(`Demand.for.family.planning.satisfied.with.modern.methods.aged.15.to.19.(%).2016–2021`), 
+  `Antenatal.care.(%).(At.least.4.visits).2016–2021.aged.15.to.19`= as.numeric(`Antenatal.care.(%).(At.least.4.visits).2016–2021.aged.15.to.19`), 
+  `	Skilled.birth.attendant.(%).2016–2021.aged.15.to.19` = as.numeric(`Skilled.birth.attendant.(%).2016–2021.aged.15.to.19`),
+  `Girls.vaccinated.against.HPV.(%).2021`= as.numeric(`Girls.vaccinated.against.HPV.(%).2021`), 
+  `Male.alcohol.use.2016`= as.numeric(`Male.alcohol.use.2016`), 
+  `Female.alcohol.use.2016`= as.numeric(`Female.alcohol.use.2016`), 
+  `Male.Tobacco.use.2015–2020` = as.numeric(`Male.Tobacco.use.2015–2020`),
+  `Female.Tobacco.use.2015–2020`= as.numeric(`Female.Tobacco.use.2015–2020`), 
+  `Insufficient.physical.activity.among.school.going.male.adolescents.(aged.11-17).2016` = as.numeric(`Insufficient.physical.activity.among.school.going.male.adolescents.(aged.11-17).2016`), 
+  `Insufficient.physical.activity.among.school.going.female.adolescents.(aged.11-17).2016`= as.numeric(`Insufficient.physical.activity.among.school.going.female.adolescents.(aged.11-17).2016`))%>%
+ 
+  rename(
+    tasa_mortalidad_adolescente_2021 = `Adolescent.mortality.rate.2021.aged.10.to.19`,
+    muertes_adolescentes_2021 = `Adolescent.deaths.2021.aged.10.to.19`,
+    tasa_reduccion_mortalidad_adolescente_2000_2021 = `Annual.rate.of.reduction.in.the.adolescent.mortality.rate.2000–2021.aged.10.to.19`,
+    tasa_natalidad_adolescente_10_14_2016_2021 = `Adolescent.birth.rate.2016–2021.aged.10.to.14`,
+    tasa_natalidad_adolescente_15_19_2016_2021 = `Adolescent.birth.rate.2016–2021.aged.15.to.19`,
+    mujeres_20_24_con_nacimiento_antes_18 = `Women.aged.20-24.years.who.gave.birth.before.age.18.(%).2016–2021`,planificacion_familiar_satisfecha_metodos_modernos_15_19 = `Demand.for.family.planning.satisfied.with.modern.methods.aged.15.to.19.(%).2016–2021`,
+    atencion_prenatal_4_visitas_15_19 = `Antenatal.care.(%).(At.least.4.visits).2016–2021.aged.15.to.19`,
+    asistencia_parto_15_19 = `	Skilled.birth.attendant.(%).2016–2021.aged.15.to.19`,
+    vacunacion_vph_chicas_2021 = `Girls.vaccinated.against.HPV.(%).2021`,
+    consumo_alcohol_hombres_2016 = `Male.alcohol.use.2016`,
+    consumo_alcohol_mujeres_2016 = `Female.alcohol.use.2016`,
+    consumo_tabaco_hombres_2015_2020 = `Male.Tobacco.use.2015–2020`,
+    consumo_tabaco_mujeres_2015_2020 = `Female.Tobacco.use.2015–2020`,
+    actividad_fisica_insuficiente_hombres_11_17_2016 = `Insufficient.physical.activity.among.school.going.male.adolescents.(aged.11-17).2016`,
+    actividad_fisica_insuficiente_mujeres_11_17_2016 = `Insufficient.physical.activity.among.school.going.female.adolescents.(aged.11-17).2016`)%>%
+
+  
+  dplyr::select(Countries, Iso_code,
+    tasa_mortalidad_adolescente_2021,
+    muertes_adolescentes_2021,
+    tasa_reduccion_mortalidad_adolescente_2000_2021,
+    tasa_natalidad_adolescente_15_19_2016_2021,
+    mujeres_20_24_con_nacimiento_antes_18,
+    planificacion_familiar_satisfecha_metodos_modernos_15_19,
+    atencion_prenatal_4_visitas_15_19,
+    asistencia_parto_15_19,
+    vacunacion_vph_chicas_2021,
+    consumo_alcohol_hombres_2016,
+    consumo_alcohol_mujeres_2016,
+    consumo_tabaco_hombres_2015_2020,
+    consumo_tabaco_mujeres_2015_2020,
+    actividad_fisica_insuficiente_hombres_11_17_2016,
+    actividad_fisica_insuficiente_mujeres_11_17_2016)%>%
+   as_tibble()
+
+
+geoj <- geojson_read('https://ctim.es/AEDV/data/geo_countries.geojson',  what = "sp")
+geoj.tb <- geoj %>% as_tibble()
+
+
+muertesadolescentes.tb <- read.xlsx("MuertesAdolescentesSeriesTemporales.xlsx") %>%
+  as_tibble()
+
+
+muertesadolescentes <- muertesadolescentes.tb%>%
+  as_tsibble(index = year,key=continent)
+
+
+
+
+```
+
+
+Mapa
+=======================================================================
+
+
+Column {.sidebar data-width=310}
+--------------------------------------------------
+
+
+```{r}
+# Selección de atributos de salud adolescente para el mapa
+
+selectInput(
+  "indicador", 
+  label = "Seleccionar indicador", 
+  choices = sort(unique(names(adolescentes)[3:ncol(adolescentes)])), 
+  selected = "tasa_mortalidad_adolescente_2021"
+)
+
+```
+
+
+```{r}
+# procesado de inputs de la primera ventana
+inputs.processing1 <- reactive({
+tb <- adolescentes %>%
+    dplyr::select(Countries, Iso_code, value = .data[[input$indicador]]) %>%
+    group_by(Countries, Iso_code) %>%
+    summarise(value = last(na.omit(value))) %>%
+    arrange(desc(value))
+  
+  return(tb)
+})
+```
+
+
+```{r}
+renderTable({
+ 
+ #capturamos el procesado de inputs de la primera ventana
+ adolescentes.filtered <- inputs.processing1()   
+  
+ adolescentes.filtered %>% 
+ mutate(value=prettyNum(round(value,digits=2), big.mark = ","))
+  
+})
+```
+
+
+Column
+--------------------------------------------------
+
+###
+
+```{r}
+# dibujamos el mapa coroplético
+leaflet::renderLeaflet({
+
+ #capturamos el procesado de inputs de la primera ventana
+ adolescentes.filtered <- inputs.processing1()     
+  
+ geoj.tb.adolescentes.filtered  <- geoj.tb %>% 
+  left_join(adolescentes.filtered,join_by("ISO_A3" == "Iso_code"))
+
+ data <-geoj.tb.adolescentes.filtered$value
+ pal <- colorQuantile("YlOrRd", data, n = 9)
+ legend.title <- input$indicador
+ 
+ # construcción etiquetas 
+ etiquetas <-paste(
+    "<strong> ",
+    geoj.tb$ADMIN ,
+    "</strong><br>",
+    legend.title,
+    ": ",
+    prettyNum(round(data,digits=2), big.mark = ",", scientific = FALSE)
+  )  %>%
+ lapply(htmltools::HTML)
+
+ # dibujamos el mapa 
+ geoj %>%
+  leaflet() %>%  
+  setView(lng = 25, lat = 22, zoom = 2) %>% 
+  addPolygons(
+    fillColor = ~pal(data), 
+    weight = 2,
+    opacity = 1,
+    color = "white",
+    dashArray = "3",
+    fillOpacity = 0.7,
+    highlightOptions = highlightOptions( 
+      weight = 2,
+      color = rgb(0.2,0.2,0.2),
+      dashArray = "",
+      fillOpacity = 0.7,
+      bringToFront = TRUE
+    ),
+    label = etiquetas 
+  ) %>% 
+  addLegend("bottomleft", pal = pal, values = data,
+    title = legend.title,
+    labFormat = function(type, cuts, p) {
+          n = length(cuts) 
+          x = (cuts[-n] + cuts[-1])/2
+          x=prettyNum(round(x,digits=2), big.mark = ",", scientific = FALSE)
+          as.character(x)
+        },
+    opacity = 1
+  )
+})
+
+```
+
+
+Comparador atributos
+=======================================================================
+
+
+Column {.sidebar data-width=310}
+--------------------------------------------------
+
+```{r}
+# Widgets para selección de parámetros 
+selectInput(
+  "x", 
+  label = "Indicador 1:",
+  choices = colnames(adolescentes)[-(1:3)], 
+  selected = colnames(adolescentes)[-(1:3)][4]
+)
+
+selectInput(
+  "x_scale", 
+  label = "Escala Transformación Indicador 1:",
+  choices = c("none",
+              "sqrt",    
+              "log"
+             ), 
+  selected = "none"
+)
+
+selectInput(
+  "y", 
+  label = "Indicador 2:",
+  choices = colnames(adolescentes)[-(1:3)], 
+  selected = colnames(adolescentes)[-(1:3)][1]
+)
+
+selectInput(
+  "y_scale", 
+  label = "Escala Transformación Indicador 2:",
+  choices = c("none",
+              "log",
+              "boxcox"
+             ), 
+  selected = "none"
+)
+```
+
+
+```{r}
+# función reactive que calcula los indicadores seleccionados escalados, 
+# en su caso, la transformación Box-Cox entre ellos y
+# la regresión lineal del resultado. 
+# devuelve una lista con todo lo calculado
+inputs.processing <- reactive( {
+  tb <- tibble(
+      country = adolescentes$Countries,
+      x = adolescentes[[input$x]],
+      y = adolescentes[[input$y]]
+    )  %>% 
+    na.omit()
+  
+  # escalamos los indicadores de acuerdo con los parámetros de escalado   
+  if(input$x_scale=="sqrt") tb$x <- sqrt(tb$x)
+  if(input$x_scale=="log") tb$x <- log(tb$x)  
+  if(input$y_scale=="log") tb$y <- log(tb$y)  
+  lambda <- 1  
+  if(input$y_scale=="boxcox"){
+    bc <- MASS::boxcox (y ~ x,data=tb) # Cálculo óptimo modelo Box-Cox 
+    lambda <- round(bc $ x [which.max (bc $ y)],digits=4)
+    if(lambda!=0){
+      tb$y <- tb$y^lambda/lambda
+    } else {
+      tb$y <- log(tb$y)
+    }
+  }
+  
+  # Cálculo regresión lineal después del escalado de las variables. 
+  fit <- lm(y ~ x,data=tb)
+  
+  # devolvemos una lista con todo lo calculado 
+  return(list(tb,fit,lambda))
+})
+``` 
+
+### 
+
+```{r}
+# imprimimos en formato HTML los resultados del análisis de regresión 
+# de los indicadores seleccionados escalados
+shiny::renderUI({
+  
+  # capturamos el resultado del procesado de los inputs 
+  tb <- inputs.processing()[[1]]
+  fit <- inputs.processing()[[2]]
+  lambda <- inputs.processing()[[3]]
+  
+  # imprimimos el resultado en formato HTML 
+  text <- 
+  paste(
+    "<strong>ANÁLISIS DE REGRESIÓN LINEAL</strong> <br>",
+    "<strong>formula:   y=ax+b </strong><br>",
+    "<strong>x: indicador 1 escalado </strong><br>",
+    "<strong>y: indicador 2 escalado </strong><br>",
+    "<strong><br>RESULTADOS</strong><br>",
+    "<strong>Correlación:</strong>",round(cor(tb$x,tb$y),digits = 4),
+    "<br><strong>Pendiente (a):</strong>",formatC(fit$coefficients[2], format = "e", digits = 2),
+    "<br><strong>Independiente (b):</strong>",formatC(fit$coefficients[1], format = "e", digits = 2)
+  )
+  if(input$y_scale=="boxcox"){
+    text <- paste(text,"<br><strong> lambda (box-cox) :</strong>",formatC(lambda, format = "e", digits = 2))
+  } 
+      
+  HTML(text)
+})
+```
+
+
+Column
+--------------------------------------------------
+
+### Comparación de Indicadores Escalados
+
+```{r} 
+# Diagrama de dispersión de los indicadores seleccionados escalados 
+# Con la recta de regresión 
+renderPlotly({
+  
+  # capturamos el resultado del procesado de los inputs 
+  tb <- inputs.processing()[[1]]
+  
+  # dibujamos el diagrama de dispersión 
+  tb %>%
+    ggplot(aes(x,y,label=country)) + 
+    geom_point() +
+    theme(legend.position = "none") +
+    labs(x= input$x, y= input$y) +
+    geom_smooth(method = lm, se = FALSE) 
+  
+})
+```
+
+
+
+Column {data-width=300}
+--------------------------------------------------
+
+### Valores de indicadores escalados
+
+```{r}
+# imprimimos la tabla con los valores de los indicadores seleccionados 
+# ordenados por el primer indicador
+renderTable({
+  
+  # capturamos el resultado del procesado de los inputs 
+  tb <- inputs.processing()[[1]]
+  
+  # imprimimos la tabla 
+  tb %>% 
+  arrange(desc(x)) %>% 
+  mutate(x=prettyNum(round(x,digits=2), big.mark = ",")) %>% 
+  mutate(y=prettyNum(round(y,digits=2), big.mark = ","))
+  
+})
+```
+
+
+
+
+Evolución de muertes
+=======================================================================
+
+  
+Column {.sidebar data-width=230}
+--------------------------------------------------
+
+  
+```{r}
+# Sidebar
+
+
+selectInput(
+  "continent1", 
+  label = "Continente 1:", 
+  choices = unique(muertesadolescentes$continent), 
+  selected = "Europe"
+)
+selectInput(
+  "continent2", 
+  label = "Continente 2:", 
+  choices = unique(muertesadolescentes$continent), 
+  selected = "America"
+)
+selectInput(
+  "continent3", 
+  label = "Continente 3:", 
+  choices = unique(muertesadolescentes$continent), 
+  selected = "Asia"
+)
+selectInput(
+  "continent4", 
+  label = "Continente 4:", 
+  choices = unique(muertesadolescentes$continent), 
+  selected = "Africa"
+)
+selectInput(
+  "yearinit", 
+  label = "Año de inicio:", 
+  choices = unique(muertesadolescentes$year), 
+  selected = 2000
+)
+selectInput(
+  "yearend", 
+  label = "Año de fin:", 
+  choices = unique(muertesadolescentes$year), 
+  selected = 2022
+)
+
+
+```
+
+
+Column
+--------------------------------------------------
+  
+###  
+  
+  
+```{r} 
+highcharter::renderHighchart({
+  tsibble::tsibble(
+    date = muertesadolescentes$year,
+    population = muertesadolescentes$deaths,
+    location = muertesadolescentes$continent,
+    index = date,
+    key = location
+  ) %>%
+    filter(location == input$continent1) %>%
+    filter(date >= as.numeric(input$yearinit) & date <= as.numeric(input$yearend)) %>%
+    highcharter::hchart("line", hcaes(x = date, y = population))
+})
+```
+
+###
+
+```{r} 
+highcharter::renderHighchart({
+  tsibble::tsibble(
+    date = muertesadolescentes$year,
+    population = muertesadolescentes$deaths,
+    location = muertesadolescentes$continent,
+    index = date,
+    key = location
+  ) %>%
+    filter(location == input$continent2) %>%
+    filter(date >= as.numeric(input$yearinit) & date <= as.numeric(input$yearend)) %>%
+    highcharter::hchart("line", hcaes(x = date, y = population))
+})
+```
+
+
+
+Column
+--------------------------------------------------
+  
+  
+### 
+  
+  
+```{r} 
+highcharter::renderHighchart({
+  tsibble::tsibble(
+    date = muertesadolescentes$year,
+    population = muertesadolescentes$deaths,
+    location = muertesadolescentes$continent,
+    index = date,
+    key = location
+  ) %>%
+    filter(location == input$continent3) %>%
+    filter(date >= as.numeric(input$yearinit) & date <= as.numeric(input$yearend)) %>%
+    highcharter::hchart("line", hcaes(x = date, y = population))
+})
+```
+
+###
+
+```{r} 
+highcharter::renderHighchart({
+  tsibble::tsibble(
+    date = muertesadolescentes$year,
+    population = muertesadolescentes$deaths,
+    location = muertesadolescentes$continent,
+    index = date,
+    key = location
+  ) %>%
+    filter(location == input$continent4) %>%
+    filter(date >= as.numeric(input$yearinit) & date <= as.numeric(input$yearend)) %>%
+    highcharter::hchart("line", hcaes(x = date, y = population))
+})
+```
+
+
+
+
+
+
+
+
+Matriz de correlación
+=======================================================================
+
+
+```{r} 
+highcharter::renderHighchart({
+  
+  adolescentes %>%
+  dplyr::select(
+    tasa_mortalidad_adolescente_2021,
+    muertes_adolescentes_2021,
+    tasa_reduccion_mortalidad_adolescente_2000_2021,
+    tasa_natalidad_adolescente_15_19_2016_2021,
+    mujeres_20_24_con_nacimiento_antes_18,
+    planificacion_familiar_satisfecha_metodos_modernos_15_19,
+    atencion_prenatal_4_visitas_15_19,
+    asistencia_parto_15_19,
+    vacunacion_vph_chicas_2021,
+    consumo_alcohol_hombres_2016,
+    consumo_alcohol_mujeres_2016,
+    consumo_tabaco_hombres_2015_2020,
+    consumo_tabaco_mujeres_2015_2020,
+    actividad_fisica_insuficiente_hombres_11_17_2016,actividad_fisica_insuficiente_mujeres_11_17_2016)  %>%
+  cor(use='complete.obs') %>% 
+  hchart()
+})
+```
+
+
+
+
+ACP (PCA)
+=======================================================================
+
+Column {.tabset}
+--------------------------------------------------
+
+### Atributos originales
+
+```{r}
+shiny::renderTable({
+  adolescentes 
+})
+
+```
+
+### Atributos normalizados 
+
+```{r}
+shiny::renderTable({
+  adolescentes %>% 
+  column_to_rownames(var="Countries") %>%
+    select_if(is.numeric) %>%
+  scale()
+})
+
+```
+
+### Componentes Principales
+
+```{r}
+data <- adolescentes %>% 
+  column_to_rownames(var="Countries") %>%
+  select_if(is.numeric)
+pca <- prcomp(na.omit(data),scale = TRUE)
+```
+
+
+```{r}
+shiny::renderTable({
+  pca$x %>% 
+    as_tibble() 
+})
+
+```
+
+### Varianza explicada
+
+
+```{r} 
+renderPlotly({
+  
+ tibble(
+  label=fct_inorder(paste("PC",1:length(pca$sdev))),
+  varPercent = pca$sdev^2/sum(pca$sdev^2) * 100
+) %>%
+  ggplot(aes(x=label,y=varPercent)) +
+    geom_bar(stat = "identity") +
+    labs(x= "Componentes Principales", 
+          y= "Porcentaje varianza explicada"
+    )+
+   geom_text(aes(label=paste0(round(varPercent,digits = 1),"%")), 
+                 size=3,
+                 colour = "blue",
+                 nudge_y = 1.
+             ) 
+  
+})
+```
+
+
+
+
+Visualización 2D PCA
+=======================================================================
+
+
+Column {.sidebar data-width=230}
+--------------------------------------------------
+
+```{r}
+shiny::numericInput(
+  "PCx",
+  label = "Componente eje x",
+  value=1,
+  min=1,
+  max=length(pca$sdev),
+  step=1
+)
+
+shiny::numericInput(
+  "PCy",
+  label = "Componente eje y",
+  value=2,
+  min=1,
+  max=length(pca$sdev),
+  step=1
+)
+```
+
+
+Column
+--------------------------------------------------
+
+###
+
+
+```{r} 
+highcharter::renderHighchart({
+ hchart(pca,choices=c(input$PCx,input$PCy))
+})
+```
+
+
+
+
+Predicciones futuras
+=======================================================================
+
+Column {.tabset}
+--------------------------------------------------
+
+### Datos sobre muertes pasadas y actuales
+
+```{r}
+shiny::renderPlot({
+  muertesadolescentes %>% 
+ggplot(aes(x=year,y=deaths)) +
+geom_line() +  
+facet_wrap(~continent,scales = "free")  +
+  labs(title = "Muertes adolescentes desde el año 2000", x = "Año", y = "Muertes") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+})
+
+```
+
+### Predicción sobre muertes futuras
+
+```{r}
+shiny::renderPlot({
+  fitcontinentes <- muertesadolescentes %>% 
+  group_by(continent)%>%
+  model(ETS(deaths))
+
+predicciontotal <- fitcontinentes |>
+  forecast(h = "20 years")
+
+predicciontotal |>
+  autoplot( muertesadolescentes%>%
+             filter(year>= year(as.Date("2000-01-01")))) +
+  facet_wrap(~ continent, scales = "free") +
+  labs(title = "Predicciones futuras de muertes adolescentes", x = "Año", y = "Muertes")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  
+})
+
+```

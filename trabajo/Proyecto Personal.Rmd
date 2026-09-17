@@ -1,0 +1,679 @@
+---
+title: "Análisis, por países y continentes, sobre la salud en adolescentes entre 2000 y 2021."
+author: "Nicole Ortega Ojeda"
+date: "2024-10-03"
+output: html_document
+---
+<style>
+  h1.title {
+    color: #900C3F;
+    font-family: Times New Roman, sans-serif;
+    font-size: 36px;
+    font-weight: bold;
+    text-align: center;
+    border-bottom: 2px solid #264653;
+    padding-bottom: 5px;
+    
+  }
+</style>
+
+Fecha última actualización : `r format(Sys.Date(), '%B %d, %Y')`.
+
+```{r,echo=FALSE}
+knitr::opts_chunk$set(
+  warning = FALSE,
+  message = FALSE,
+  echo = TRUE
+)
+```
+
+
+
+
+```{r, echo = FALSE,message = FALSE,warning = FALSE}
+if (!require(openxlsx)) install.packages('openxlsx') 
+library(openxlsx)
+if (!require(pxR)) install.packages('pxR') 
+library(pxR)
+if (!require(tidyverse)) install.packages('tidyverse') 
+library(tidyverse)
+if (!require(wordcloud)) install.packages('wordcloud') 
+library(wordcloud)
+if (!require(RColorBrewer)) install.packages('RColorBrewer') 
+library(RColorBrewer)
+if (!require(GGally)) install.packages('GGally') 
+library(GGally)
+if (!require(patchwork)) install.packages('patchwork') 
+library(patchwork)
+if (!require(ggplot2)) install.packages('ggplot2') 
+library(ggplot2)
+if (!require(urca)) install.packages('urca') 
+library(urca)
+if (!require(fpp3)) install.packages('fpp3') 
+library(fpp3)
+if (!require(highcharter)) install.packages('highcharter') 
+library(highcharter)
+if (!require(leaflet)) install.packages('leaflet') 
+library(leaflet)  
+if (!require(geojsonio)) install.packages('geojsonio') 
+library(geojsonio) 
+if (!require(plotly)) install.packages('plotly') 
+library(plotly)
+#source("utilidades.R")
+```
+
+****
+
+[Cuadro de mandos](http://10.22.143.222:3838/sample-apps/a2541/dashboard.Rmd)
+
+<font size="5" color="900C3F" face="Times New Roman"> <b> ESTADO ACTUAL Y OBJETIVOS </b> </font>
+
+
+La adolescencia es una etapa crucial en el desarrollo humano, marcada por cambios físicos, emocionales y sociales, así como por nuevas experiencias y vivencias que contribuyen a la formación de la identidad personal y social. Este período de transición, que abarca desde la infancia hasta el comienzo de la edad adulta, influye de manera determinante en los patrones de salud y bienestar. Las decisiones y comportamientos que se adoptan en esta etapa pueden tener efectos a largo plazo en la salud física y mental, el desarrollo social y las oportunidades de vida.
+
+Sin embargo, las condiciones de vida, el acceso a servicios de salud y los factores socioeconómicos y culturales introducen una gran variabilidad en los indicadores de salud adolescente a nivel global. En muchos países, los adolescentes enfrentan barreras significativas para acceder a servicios de salud adecuados y educación sexual, lo cual puede afectar su salud reproductiva y exponerlos a riesgos evitables. Asimismo, en ciertos entornos, el consumo de sustancias como alcohol y tabaco durante la adolescencia puede verse influenciado por factores sociales y familiares, lo que incrementa la prevalencia de estas conductas de riesgo en diferentes regiones y grupos.
+
+
+**Motivación:**
+
+Este proyecto nace de la necesidad de analizar de manera global la salud adolescente, destacando las desigualdades y las áreas que requieren mayor atención. Las políticas públicas deben estar respaldadas por datos concretos que traten de solucionar problemas importantes. Los adolescentes representan una proporción bastante grande de la población global y garantizar su bienestar es esencial para el progreso económico y social.
+
+
+**Objetivos:**
+
++ Evaluar las desigualdades regionales en indicadores clave de salud adolescente.
+
++ Analizar correlaciones entre factores como pobreza, educación, acceso a servicios de salud y resultados de salud en adolescentes.
+
++ Relacionar el análisis con los Objetivos de Desarrollo Sostenible (ODS), pues son objetivos comunes mundiales.
+
++ Implementar modelos predictivos que proyecten tendencias futuras y posibles escenarios.
+
+
+
+<font size="5" color= "900C3F" face="Times New Roman"> <b> APORTACIONES </b> </font>
+
+Este proyecto tiene una estrecha relación con los Objetivos de Desarrollo Sostenible (ODS), con la finalidad de colaborar con los mismos y arrojar algo de luz sobre los ODS con los que se relaciona. Entre ellos están los siguientes:
+
++ ODS 3 (Salud y Bienestar): Promueve el acceso universal a servicios de salud para adolescentes y la reducción de enfermedades prevenibles.
+
++ ODS 5 (Igualdad de Género): Enfoca la maternidad temprana y barreras de género como aspectos a resolver.
+
++ ODS 10 (Reducción de Desigualdades): Identifica disparidades regionales y propone soluciones para garantizar equidad en el acceso a la salud.
+
+
+<font size="5" color="900C3F" face="Times New Roman"> <b> DESARROLLO </b> </font>
+
+
+<font size="4" face="Times New Roman"> <b> Fuentes de datos y análisis de su fiabilidad </b> </font>
+
+UNICEF, como organismo internacional dedicado al bienestar y desarrollo de la infancia y la adolescencia, recopila y publica datos detallados sobre diversos aspectos de la salud adolescente en países de todo el mundo. Estos datos incluyen información sobre tasas de mortalidad, conductas de riesgo, acceso a servicios de salud y salud reproductiva. En este estudio, utilizaremos el conjunto de datos proporcionado por UNICEF como base para analizar los patrones y tendencias en los indicadores de salud adolescente, desglosados por país. Esta fuente confiable permite una comprensión profunda de las realidades que enfrentan los adolescentes en diferentes contextos y facilita la comparación entre diferentes lugares del mundo.
+
+
+
+<font size="4" face="Times New Roman"> <b> Análisis exploratorio inicial de los datos </b> </font>
+
+Uno de los datasets, el denominado "adolescentes", contiene una variedad de indicadores que permiten obtener una visión más comprensiva de los factores que afectan la salud adolescente en distintas regiones del mundo. El dataset es bastante completo, no obstante, tiene valores "NA" o no disponibles en algunas de sus columnas, lo que supone un punto en contra para el posterior análisis, aunque esto no ha impedido su uso en la viualización de los datos. Este dataset cuenta con las siguientes variables:
+
+ + *Countries:* Contiene un listado con todos los países del mundo, citados en inglés.
+       
+ + *Iso_code:* Hace referencia al código estandarizado de tres letras establecido por la Organización Internacional de Normalización (ISO), que es una abreviación única que representa a cada país o territorio.
+       
+ + *Continent:* Lista de continentes dependiendo del país en concordancia en la misma fila, estando dichos continentes en inglés.
+ 
+ + *Adolescent.mortality.rate.2021.aged.10.to.19:* Esta columna representa la tasa de mortalidad de adolescentes en 2021 para la población de edades entre 10 y 19 años. Esta tasa mide el número de muertes de adolescentes por cada 100.000 adolescentes, por lo que se trata de una variable per cápita.
+ 
+ + *Adolescent.deaths.2021.aged.10.to.19:* Representa el número total de muertes de adolescentes en 2021 para la población de edades entre 10 y 19 años. Esta cifra se expresa en número absoluto de muertes y no está ajustada por el tamaño de la población. Refleja la cantidad total de adolescentes fallecidos dentro de un país.
+ 
+ + *Adolescent.birth.rate.2016–2021.aged.10.to.14:* Representa la tasa de natalidad adolescente promedio entre los años 2016 y 2021 para adolescentes de 10 a 14 años. Esta tasa se expresa como el número de nacimientos por cada 1,000 adolescentes en ese grupo de edad.
+ 
+ + *Adolescent.birth.rate.2016–2021.aged.15.to.19:* Esta variable representa, al igual que la anterior, la tasa de natalidad adolescente promedio entre los años 2016 y 2021, pero para adolescentes de 15 a 19 años. También está expresada como el número de nacimientos por cada 1,000 adolescentes de esa edad.
+ 
+ + *Women.aged.20-24.years.who.gave.birth.before.age.18.(%).2016–2021:* Representa el porcentaje de mujeres de 20 a 24 años que dieron a luz antes de los 18 años, considerando un promedio entre los años 2016 y 2021.
+ 
+ + *Demand.for.family.planning.satisfied.with.modern.methods.aged.15.to.19.(%).2016–2021:*Representa el porcentaje de adolescentes de 15 a 19 años cuya demanda de planificación familiar es satisfecha mediante métodos modernos de anticoncepción, entre los años 2016 y 2021.  
+ 
+ + *Antenatal.care.(%).(At least 4 visits).2016–2021.aged.15.to.19:* La variable representa el porcentaje de adolescentes de 15 a 19 años que recibieron al menos cuatro visitas de atención prenatal durante el embarazo, que se considera lo adecuado según el estándar mínimo recomendado. Se considera un período entre 2016 y 2021.
+ 
+ + *Skilled.birth.attendant.(%).2016–2021.aged.15.to.19:* Muestra el porcentaje de adolescentes de 15 a 19 años que recibieron atención de un profesional capacitado durante el parto, en un período de 2016 a 2021.
+ 
+ + *Girls.vaccinated.against.HPV.(%).2021:* Representa el porcentaje de niñas dentro del conjunto de todas las adolescentes que recibieron la vacuna contra el virus del papiloma humano (VPH) en el año 2021.
+ 
+ + *Male.alcohol.use.2016:* Representa la proporción de adolescentes varones que consumieron alcohol en 2016 y se expresa en porcentaje. masculinos durante ese año.
+ 
+ + *Female.alcohol.use.2016:* Representa, así como la anterior, el consumo de alcohol en adolescentes, pero de género femenino, en 2016 y también está representada en porcentaje.
+ 
+ + *Male.Tobacco.use.2015–2020:* Muestra el porcentaje de adolescentes varones que consumieron tabaco en un período entre 2015 y 2020.
+ 
+ + *Female.Tobacco.use.2015–2020:* Muestra de la misma manera el porcentaje de adplescentes hembras que consumieron tabaco entre 2015 y 2020. 
+ 
+ + *Insufficient.physical.activity.among.school.going.male.adolescents.(aged.11-17).2016:* Representa el porcentaje de adolescentes varones de entre 11 y 17 años en edad escolar que realizan una actividad física insuficiente, medido en el año 2016.
+ 
+ + *Insufficient.physical.activity.among.school.going.female.adolescents.(aged.11-17).2016:* Representa el porcentaje de adolescentes hembras de entre 11 y 17 años que realizan una actividad física insuficiente, medido en el año 2016.
+
+  
+
+
+```{r, echo = FALSE}
+adolescentes <- read.xlsx("Table-5-Adolescent-health-SOWC2023 (1).xlsx", startRow = 4) %>%
+  mutate(`Adolescent.mortality.rate.2021.aged.10.to.19` = as.numeric(`Adolescent.mortality.rate.2021.aged.10.to.19`), 
+    `Adolescent.deaths.2021.aged.10.to.19`= as.numeric(`Adolescent.deaths.2021.aged.10.to.19`), 
+    `Annual.rate.of.reduction.in.the.adolescent.mortality.rate.2000–2021.aged.10.to.19` = as.numeric(`Annual.rate.of.reduction.in.the.adolescent.mortality.rate.2000–2021.aged.10.to.19`), 
+  `Adolescent.birth.rate.2016–2021.aged.10.to.14` = as.numeric(`Adolescent.birth.rate.2016–2021.aged.10.to.14`),                            `Adolescent.birth.rate.2016–2021.aged.15.to.19`= as.numeric(`Adolescent.birth.rate.2016–2021.aged.15.to.19`),
+  `Women.aged.20-24.years.who.gave.birth.before.age.18.(%).2016–2021` = as.numeric(`Women.aged.20-24.years.who.gave.birth.before.age.18.(%).2016–2021`), 
+  `Demand.for.family.planning.satisfied.with.modern.methods.aged.15.to.19.(%).2016–2021`= as.numeric(`Demand.for.family.planning.satisfied.with.modern.methods.aged.15.to.19.(%).2016–2021`), 
+  `Antenatal.care.(%).(At.least.4.visits).2016–2021.aged.15.to.19`= as.numeric(`Antenatal.care.(%).(At.least.4.visits).2016–2021.aged.15.to.19`), 
+  `	Skilled.birth.attendant.(%).2016–2021.aged.15.to.19` = as.numeric(`Skilled.birth.attendant.(%).2016–2021.aged.15.to.19`), 
+  `Girls.vaccinated.against.HPV.(%).2021`= as.numeric(`Girls.vaccinated.against.HPV.(%).2021`), 
+  `Male.alcohol.use.2016`= as.numeric(`Male.alcohol.use.2016`), 
+  `Female.alcohol.use.2016`= as.numeric(`Female.alcohol.use.2016`), 
+  `Male.Tobacco.use.2015–2020` = as.numeric(`Male.Tobacco.use.2015–2020`), 
+  `Female.Tobacco.use.2015–2020`= as.numeric(`Female.Tobacco.use.2015–2020`), 
+  `Insufficient.physical.activity.among.school.going.male.adolescents.(aged.11-17).2016` = as.numeric(`Insufficient.physical.activity.among.school.going.male.adolescents.(aged.11-17).2016`), 
+  `Insufficient.physical.activity.among.school.going.female.adolescents.(aged.11-17).2016`= as.numeric(`Insufficient.physical.activity.among.school.going.female.adolescents.(aged.11-17).2016`))%>%
+  as.tibble()
+
+```
+
+
+
+Además del dataset llamado "adolescentes", para analizar tendencias a lo largo del tiempo, se emplea un segundo dataset construido específicamente para este estudio, utilizando datos de la misma fuente oficial. Este dataset personalizado lo he definido como "muertesadolescentes" y se centra principalmente en series temporales, permitiendo un análisis evolutivo de las muertes adolescentes en cada continente a lo largo de los años, comenzando en el año 2000 y finalizando en el 2022. 
+
+Las variables de este dataset son las siguientes:
+
+ + *continent:* Se trata de una lista con los nombres de los continentes, que se repiten para cada año disponible en el dataset. Los continentes se citan en inglés.
+ 
+ + *year:* Contiene los años del 2000 al 2022, repetidos tantas veces como continentes hay en la columna explicada anteriormente. 
+ 
+ + *deaths:* Que cuenta con el valor del número de muertes adolescentes filtrado por año y por continente.
+
+
+
+```{r, echo = FALSE}
+muertesadolescentes.tb <- read.xlsx("MuertesAdolescentesSeriesTemporales.xlsx") %>%
+  as_tibble()
+
+
+muertesadolescentes <- muertesadolescentes.tb%>%
+  as_tsibble(index = year,key=continent)
+
+
+```
+
+
+
+<font size="4" face="Times New Roman"> <b> Contexto global </b> </font>
+
+A nivel mundial, millones de adolescentes pierden la vida cada año debido a causas prevenibles como enfermedades transmisibles, desnutrición, embarazos tempranos y violencia. Estas muertes no solo se tratan de tragedias individuales, sino que también muestran fallos sistémicos en la implementación de políticas públicas y en la distribución equitativa de recursos.
+
+Las diferencias en la mortalidad adolescente son profundas y varían inmensamente entre países de altos ingresos y aquellos de ingresos bajos o medios. En naciones desarrolladas, los sistemas de salud sólidos, la educación accesible y las condiciones socioeconómicas favorables han reducido notablemente las tasas de mortalidad adolescente. En contraste, países con sistemas de salud débiles, alta incidencia de pobreza y conflictos armados muestran cifras alarmantes.
+
+Esta gráfica a continuación complementa esta visión al enfocarse en los países con las tasas más altas de mortalidad adolescente en 2021, teniendo en cuenta a su vez la cantidad de población de cada país al ser una variable per cápita para un mejor análisis. 
+
+```{r, echo=FALSE}
+barras2 <- adolescentes %>% 
+  filter(Adolescent.mortality.rate.2021.aged.10.to.19 >= 15) %>% 
+  ggplot(aes(x = reorder(Countries,Adolescent.mortality.rate.2021.aged.10.to.19), y = Adolescent.mortality.rate.2021.aged.10.to.19, fill = Countries, text = paste("Tasa de mortalidad:", Adolescent.mortality.rate.2021.aged.10.to.19, "<br>País:", Countries))) +
+    geom_bar(stat = "identity") +
+    labs(title = "Países con mayor tasa de mortalidad adolescente (2021)", y = "Tasa de mortalidad", x = "Países") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+    theme(legend.position = "none")
+
+ggplotly(barras2, tooltip = "text")
+
+```
+
+
+Entre estos países con mayor tasa de mortalidad se encuentran la República Democrática del Congo, Sierra Leona y Somalia, los cuales presentan tasas superiores a 20 muertes por cada 1,000 adolescentes. Estas cifras reflejan realidades duras marcadas por conflictos armados, inestabilidad política y sistemas de salud deficientes. Países como Sudán del Sur y Chad enfrentan también desafíos severos debido a conflictos armados y desplazamientos masivos, lo que limita el acceso a servicios básicos como salud y educación.
+
+En naciones como Níger y la República Centroafricana, la falta de recursos básicos y la pobreza generalizada contribuyen a estas tasas alarmantes. En estos países, los sistemas de salud suelen ser insuficientes para abordar problemas prevenibles como desnutrición.
+
+En conjunto, esta gráfica refuerza la necesidad de intervenciones urgentes para abordar las desigualdades estructurales que perpetúan la alta mortalidad adolescente. Estas intervenciones deben incluir inversiones en infraestructura sanitaria, educación y políticas específicas para proteger a las adolescentes. 
+
+
+Así como se analizan las muertes adolescentes por países, es esencial analizar las variaciones dentro de cada continente también, pues el problema quizás persista en todo el territorio. El siguiente boxplot muestra un resumen visual del número de muertes adolescentes agrupadas por continente, permitiendo identificar no solo las diferencias entre regiones. 
+
+
+
+```{r, echo=FALSE}
+boxplot1 <- adolescentes %>% 
+  ggplot(aes(x = Continent, y = Adolescent.deaths.2021.aged.10.to.19, fill = Continent)) + 
+    geom_boxplot() + 
+    geom_jitter(aes(text = paste("País:", Countries, "<br>Continente:", Continent, "<br>Nº muertes adolescentes:", Adolescent.deaths.2021.aged.10.to.19)), 
+                width = 0.2, size = 1, alpha = 0.6) +  
+    scale_y_continuous(trans = "log2") +
+    labs(y = "Muertes adolescentes", x = "Continente") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")+
+  labs(title = "Muertes adolescentes agrupadas por continentes (2021)")
+
+ggplotly(boxplot1, tooltip = "text")
+
+```
+
+El boxplot de muertes adolescentes agrupadas por continentes muestra cómo África lidera con la mayor dispersión y valores absolutos de mortalidad, reflejo de condiciones como la falta de acceso a servicios básicos de salud como se ha mencionado anteriormente. América y Asia presentan distribuciones amplias, mientras que Australia y Europa destacan por sus cifras medianas más bajas y menor variabilidad, reflejando una mayor estabilidad socioeconómica y mejores sistemas de salud.
+
+
+
+
+<font size="4" face="Times New Roman"> <b> Desigualdades regionales en el consumo de sustancias </b> </font>
+
+El consumo de sustancias, como el alcohol y el tabaco, representa uno de los principales factores de riesgo que afectan la salud de las personas en todo el mundo, incluyendo a los adolescentes. Sin embargo, el impacto de estas sustancias varía ampliamente según la región y está condicionado por factores culturales, económicos y normativos. Las siguientes gráficas permiten explorar estas desigualdades a nivel continental, proporcionando una visión comparativa del consumo de alcohol y tabaco en distintos contextos globales, con un análisis diferenciado por género.
+
+
+```{r, echo=FALSE}
+barras7 <- adolescentes %>%
+  group_by(Continent) %>%
+  summarise(
+    male_total = sum(Male.alcohol.use.2016, na.rm = TRUE),
+    female_total = sum(Female.alcohol.use.2016, na.rm = TRUE)
+  ) %>%
+  pivot_longer(male_total:female_total, names_to = "sex", values_to = "alcohol") %>%  
+  ggplot(aes(x = Continent, y = alcohol, fill = sex, 
+             text = paste("Consumo de alcohol:", alcohol, "<br>Continente:", Continent, "<br>Sexo:", sex))) +
+    geom_bar(stat = "identity") +
+  labs(title = "Tasa de consumo de alcohol por continente (2016)", y = "Consumo de alcohol", x = "Continente")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+
+ggplotly(barras7, tooltip = "text")
+
+```
+
+
+Esta gráfica muestra las tasas de consumo de alcohol por continente, destacando a Europa como el líder indiscutible, con cifras que superan ampliamente a las de otras regiones tanto en hombres como en mujeres. Este fenómeno puede atribuirse a la aceptación cultural del consumo de alcohol en muchos países europeos, junto con niveles más altos de ingreso per cápita y un acceso generalizado a bebidas alcohólicas. Sin embargo, se observa que el consumo masculino supera ampliamente al femenino no solo en Europa, sino en todas las regiones, siendo esta diferencia especialmente pronunciada en África y Asia. En contraste, Australia y África registran tasas considerablemente más bajas a las de Europa, lo que podría reflejar restricciones culturales y religiosas, así como factores económicos. En todo caso, el consumo de alcohol en hombres está más normalizado o permitido, mientras que en mujeres puede estar restringido por normas culturales o religiosas sobre todo en países Asiáticos, donde se han visto más disputas sobre este tema en el período de tiempo analizado (2016). 
+
+
+```{r, echo=FALSE}
+barras8 <- adolescentes %>%  
+  group_by(Continent)  %>% 
+    summarise(
+    male_total = sum(`Male.Tobacco.use.2015–2020`, na.rm = TRUE),
+    female_total = sum(`Female.Tobacco.use.2015–2020`, na.rm = TRUE))%>%
+ pivot_longer(male_total:female_total, names_to = "sex", values_to = "tobacco") %>%   
+  ggplot(aes(x=Continent,y=tobacco,fill=sex, text = paste("Consumo de tabaco:", tobacco, "<br>Continente:", Continent, "<br>Sexo:", sex))) +
+    geom_bar(position="dodge",stat = "identity") +
+  labs(title = "Tasa de consumo de tabaco (2015 - 2020)", y = "Consumo de tabaco", x = "Continente")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+
+ggplotly(barras8, tooltip = "text")
+```
+
+
+La gráfica de consumo de tabaco también revela importantes diferencias por género. En Asia y África, donde las tasas generales de consumo son más altas, los hombres representan la mayor parte del consumo. En África, el consumo masculino supera ampliamente al femenino, lo que podría estar relacionado con campañas publicitarias dirigidas a hombres y barreras culturales que restringen el uso de tabaco en mujeres. Por otro lado, Europa, a diferencia del consumo de alcohol, tiene la tasa más baja de consumo general y muestra una brecha menor entre géneros, posiblemente debido a un enfoque más equitativo en la reducción del tabaquismo.
+
+
+
+Si comparamos ambas gráficas, se observa que las diferencias de género son una constante en todas las regiones y sustancias. En todos los continentes, el consumo masculino de alcohol y tabaco supera al femenino, con disparidades más marcadas en África y Asia. Por otro lado, Europa y América muestran una menor brecha entre géneros, posiblemente como resultado de un contexto cultural más igualitario e incluyente para las mujeres.
+
+
+
+<font size="4" face="Times New Roman"> <b> Maternidad y salud sexual en adolescentes </b> </font>
+
+
+La maternidad en la adolescencia es un fenómeno que ha persistido durante generaciones, especialmente el acceso a la salud sexual y reproductiva es limitado. En muchas partes del mundo se han logrado avances significativos para reducir estas tasas, pero las desigualdades siguen siendo profundas, afectando desproporcionadamente a las adolescentes en países de ingresos bajos y medios. 
+
+Históricamente, la maternidad adolescente ha sido percibida de manera diferente según el contexto cultural. En algunas regiones, ser madre a una edad temprana es aceptado socialmente, a menudo vinculado con normas tradicionales de matrimonio infantil y la necesidad de procrear cuanto antes. En otras, se asocia con falta de oportunidades educativas y económicas, reflejando fallos en la protección de las adolescentes.
+
+Las siguientes gráficas exploran diferentes versiones de la maternidad adolescente, ofreciendo una perspectiva total de cómo varía según la edad, el impacto a lo largo del tiempo y las diferencias entre regiones del mundo.
+
+```{r, echo=FALSE}
+adolescentes %>% 
+  ggplot(aes(x = `Adolescent.birth.rate.2016–2021.aged.15.to.19`)) + 
+    geom_histogram(aes(y=after_stat(density))) +
+    geom_density(alpha=0.6)+
+  labs(title = "Tasa de madres adolescentes entre 15 y 19 años.", x = "Madres adolescentes", y = "densidad de valores")
+```
+
+Esta gráfica muestra la distribución de la tasa de madres adolescentes entre los 15 y 19 años, destacando cómo las tasas se concentran en niveles bajos en la mayoría de los países. Sin embargo, la presencia de una cola derecha indica que algunos países tienen tasas excepcionalmente altas, superando las 150 madres adolescentes por cada 1,000 jóvenes en este rango de edad. Esto es un gran problema a tener en cuenta, pues las adolescentes embarazadas enfrentan mayores riesgos de complicaciones médicas durante el embarazo y el parto, ya que sus cuerpos aún no están completamente desarrollados para la maternidad. 
+
+
+```{r, echo=FALSE}
+adolescentes %>%
+  filter(!is.na(`Women.aged.20-24.years.who.gave.birth.before.age.18.(%).2016–2021`)) %>%
+  mutate(women_birth_before_18 = `Women.aged.20-24.years.who.gave.birth.before.age.18.(%).2016–2021`) %>%
+  ggplot(aes(x = women_birth_before_18)) + 
+  geom_histogram() +
+  scale_y_continuous(trans = 'log2') +
+  scale_x_continuous(trans = 'log2') + 
+  geom_vline(aes(xintercept = mean(women_birth_before_18, na.rm = TRUE)), linetype = "dashed") + 
+  geom_vline(aes(xintercept = quantile(women_birth_before_18, 0.25, na.rm = TRUE)), linetype = "solid") +
+  geom_vline(aes(xintercept = quantile(women_birth_before_18, 0.5, na.rm = TRUE)), linetype = "solid") +
+  geom_vline(aes(xintercept = quantile(women_birth_before_18, 0.75, na.rm = TRUE)), linetype = "solid")+
+  labs(title = "Nº de madres de 20 a 24 años que han dado a luz antes de los 18", x = "Madres antes de los 18")
+```
+
+
+Esta otra gráfica nos muestra el número de mujeres que hoy tienen entre 20 y 24 años tuvieron su primer hijo antes de los 18, reflejando las implicaciones de la maternidad temprana a largo plazo. La mayor concentración de casos se encuentra entre mujeres que dieron a luz a los 16 y 17 años, con una caída progresiva hacia edades más jóvenes. Las adolescentes que son madres a una edad temprana tienen más probabilidades de abandonar la escuela, lo que limita sus oportunidades de desarrollo personal y profesional, por no hablar de que los hijos de madres adolescentes tienen un mayor riesgo de enfrentar pobreza, malnutrición y falta de acceso a la educación, perpetuando un ciclo de desigualdad.
+
+
+```{r, echo=FALSE}
+boxplot2 <- adolescentes %>% 
+  ggplot(aes(x = Continent, y = `Women.aged.20-24.years.who.gave.birth.before.age.18.(%).2016–2021`, fill = Continent)) + 
+    geom_boxplot() +
+    geom_jitter(aes(text = paste("País:", Countries,
+                                 "<br>Continente:", Continent,
+                                 "<br>Mujeres (%):", `Women.aged.20-24.years.who.gave.birth.before.age.18.(%).2016–2021`)), width = 0.2, size = 1, alpha = 0.6) +
+    scale_fill_brewer(palette = "BuGn") +
+    labs(title = "Mujeres que han dado a luz antes de los 18", y = "Mujeres (%)", x = "Continente") +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),legend.position = "none")
+
+ggplotly(boxplot2, tooltip = "text")
+```
+
+
+El boxplot proporciona una perspectiva comparativa de las tasas de maternidad adolescente antes de los 18 años en cada continente, destacando cómo las desigualdades varían según el contexto geográfico y cultural. Las tasas más altas se encuentran en África, donde hasta el 50% de las mujeres en algunos países dieron a luz antes de los 18. Esto refleja normas culturales que promueven el matrimonio infantil y limitan la autonomía de las adolescentes. América y Asia tienen tasas moderadas pero muestran una alta variabilidad, lo que sugiere desigualdades significativas entre países dentro de cada continente, que se pueden ver reflejados en el boxplot dinámico. Europa y Australia cuentan con las tasas más bajas. 
+
+En conjunto, estas visualizaciones refuerzan la urgencia de invertir en educación sexual, acceso a métodos anticonceptivos y políticas públicas que promuevan la igualdad de género. Además, subrayan cómo la maternidad adolescente no solo es un desafío de salud pública, sino también un reflejo de las desigualdades estructurales que limitan el desarrollo de las adolescentes en muchas partes del mundo.
+
+
+
+<font size="4" face="Times New Roman"> <b> Correlaciones entre variables y resultados de salud </b> </font>
+
+La relación entre las diferentes variables sociodemográficas y los resultados de salud es fundamental para comprender las desigualdades globales. Factores como la mortalidad, la natalidad y los indicadores económicos interactúan de maneras complejas, mostrando patrones que varían notablemente entre países y continentes.
+
+En esta sección, se analizan las correlaciones entre indicadores clave como tasas de natalidad, mortalidad adolescente, y variables económicas, destacando las disparidades entre continentes y el impacto que estos factores tienen sobre los resultados de salud.
+
+
+```{r, echo = FALSE}
+adolescentes_renombrados <- adolescentes %>%
+rename(
+    MortalityRate = `Adolescent.mortality.rate.2021.aged.10.to.19`,
+    Deaths = `Adolescent.deaths.2021.aged.10.to.19`,
+    MortalityReductionRate = `Annual.rate.of.reduction.in.the.adolescent.mortality.rate.2000–2021.aged.10.to.19`,
+    BirthRate10to14 = `Adolescent.birth.rate.2016–2021.aged.10.to.14`,
+    BirthRate15to19 = `Adolescent.birth.rate.2016–2021.aged.15.to.19`,
+    WomenBirthBefore18 = `Women.aged.20-24.years.who.gave.birth.before.age.18.(%).2016–2021`,
+    FamilyPlanning = `Demand.for.family.planning.satisfied.with.modern.methods.aged.15.to.19.(%).2016–2021`,
+    AntenatalCare = `Antenatal.care.(%).(At.least.4.visits).2016–2021.aged.15.to.19`,
+    HPVVaccination = `Girls.vaccinated.against.HPV.(%).2021`,
+    MaleAlcohol = `Male.alcohol.use.2016`,
+    FemaleAlcohol = `Female.alcohol.use.2016`,
+    MaleTobacco = `Male.Tobacco.use.2015–2020`,
+    FemaleTobacco = `Female.Tobacco.use.2015–2020`,
+    PhysicalActivityMale = `Insufficient.physical.activity.among.school.going.male.adolescents.(aged.11-17).2016`,
+    PhysicalActivityFemale = `Insufficient.physical.activity.among.school.going.female.adolescents.(aged.11-17).2016`
+  )
+
+```
+
+```{r, echo=FALSE}
+adolescentes_renombrados %>% 
+  select(Continent,
+         Deaths,
+         BirthRate10to14,
+         BirthRate15to19) %>% 
+  ggpairs(columns = 2:4, 
+          aes(color = Continent,alpha=0.5)) 
+```
+
+
+Esta primera gráfica es una matriz de correlaciones que explora la relación entre tasas de mortalidad adolescente, tasas de natalidad y edad promedio en los continentes. En África y América, existe una correlación positiva entre la natalidad y la mortalidad adolescente, reflejando cómo altos índices de natalidad están asociados con mayores tasas de mortalidad. En Europa, las correlaciones entre estas variables son bajas, lo que indica que los sistemas de salud efectivos rompen este vínculo, asegurando que altas tasas de natalidad no impliquen mayores riesgos de mortalidad. En Australia, las correlaciones varían ampliamente, por lo que hay que segmentar los análisis por subregiones debido a diferencias internas.
+
+
+
+```{r, echo=FALSE}
+dispersion1 <- adolescentes %>% 
+  ggplot(aes(x = Adolescent.mortality.rate.2021.aged.10.to.19, y = `Adolescent.birth.rate.2016–2021.aged.15.to.19`, fill = Continent, text = paste("Tasa mortalidad:", Adolescent.mortality.rate.2021.aged.10.to.19, 
+"<br>Tasa natalidad:", `Adolescent.birth.rate.2016–2021.aged.15.to.19`,"<br>Continente:", Continent, "<br>País:", Countries))) + 
+    geom_point(shape = 21, color = NA, size = 2, alpha = 0.7) + 
+    geom_smooth(method = lm, se = FALSE) +
+    scale_x_continuous(trans = 'log2') +
+    labs(title = "Relación tasas de natalidad y mortalidad por continentes", x = "Tasa de mortalidad",y = "Tasa de natalidad",
+fill = "Continent") +
+    theme_minimal()
+ggplotly(dispersion1, tooltip = "text")
+
+```
+
+
+La gráfica es un diagrama de dispersión que relaciona las tasas de natalidad con las tasas de mortalidad para cada continente, utilizando colores llamativos para identificar las regiones. Este análisis visual resalta cómo los continentes y países con altas tasas de mortalidad también suelen tener altas tasas de natalidad. Al igual que en el anterior diagrama, se observa una clara relación positiva en África, con puntos que se concentran en la parte superior derecha del gráfico. Esto refleja cómo las condiciones de vida en muchos países africanos perpetúan ciclos de pobreza y falta de acceso a servicios de salud. Ambas regiones, África y Asia, muestran patrones dispersos, con una variabilidad significativa entre países. Esto sugiere que algunos países han logrado reducir la mortalidad a pesar de tasas de natalidad moderadas. Por último, Europa se agrupa en la parte inferior izquierda del gráfico, con las tasas más bajas de natalidad y mortalidad, destacando la eficacia de sus políticas de salud pública.
+
+
+<font size="4" face="Times New Roman"> <b> Matriz de correlación </b> </font>
+
+La matriz de correlación es una herramienta analítica utilizada para medir la relación entre diferentes variables. En este caso, muestra cómo diversos indicadores de salud y comportamiento relacionados con adolescentes están interconectados. Cada celda representa el coeficiente de correlación entre dos variables, con valores que van desde -1 (correlación negativa perfecta) a +1 (correlación positiva perfecta). A continuación se muestra la matriz de correlación del dataset trabajado en el proyecto:
+
+
+```{r, echo = FALSE}
+adolescentes_renombrados <- adolescentes %>%
+rename(
+    MortalityRate = `Adolescent.mortality.rate.2021.aged.10.to.19`,
+    Deaths = `Adolescent.deaths.2021.aged.10.to.19`,
+    MortalityReductionRate = `Annual.rate.of.reduction.in.the.adolescent.mortality.rate.2000–2021.aged.10.to.19`,
+    BirthRate10to14 = `Adolescent.birth.rate.2016–2021.aged.10.to.14`,
+    BirthRate15to19 = `Adolescent.birth.rate.2016–2021.aged.15.to.19`,
+    WomenBirthBefore18 = `Women.aged.20-24.years.who.gave.birth.before.age.18.(%).2016–2021`,
+    FamilyPlanning = `Demand.for.family.planning.satisfied.with.modern.methods.aged.15.to.19.(%).2016–2021`,
+    AntenatalCare = `Antenatal.care.(%).(At.least.4.visits).2016–2021.aged.15.to.19`,
+    HPVVaccination = `Girls.vaccinated.against.HPV.(%).2021`,
+    MaleAlcohol = `Male.alcohol.use.2016`,
+    FemaleAlcohol = `Female.alcohol.use.2016`,
+    MaleTobacco = `Male.Tobacco.use.2015–2020`,
+    FemaleTobacco = `Female.Tobacco.use.2015–2020`,
+    PhysicalActivityMale = `Insufficient.physical.activity.among.school.going.male.adolescents.(aged.11-17).2016`,
+    PhysicalActivityFemale = `Insufficient.physical.activity.among.school.going.female.adolescents.(aged.11-17).2016`
+  )
+
+```
+
+
+```{r, echo=FALSE}
+adolescentes_renombrados %>%
+  select(MortalityRate, Deaths, MortalityReductionRate, BirthRate10to14, BirthRate15to19,WomenBirthBefore18, FamilyPlanning, AntenatalCare, HPVVaccination, MaleAlcohol, FemaleAlcohol, MaleTobacco, FemaleTobacco, PhysicalActivityMale, PhysicalActivityFemale)%>%
+  cor(use='complete.obs') %>% 
+  hchart()%>%
+  hc_xAxis(labels = list(rotation = 90, align = "right")) 
+
+```
+
+En la diagonal principal, al tratarse de las mismas variables, están totalmente relacionadas y se representan en azul oscuro.
+Las tasas de natalidad están altamente correlacionadas con la mortalidad adolescente y las tasas de mujeres que dieron a luz antes de los 18. Esto refleja cómo contextos con altas tasas de natalidad también tienden a tener mayores riesgos de mortalidad, reflejado también en el anterior diagrama de correlación. El acceso a servicios médicos como el cuidado prenatal también está relacionado positivamente con la vacunación contra el VPH, lo que sugiere que los sistemas de salud que promueven un servicio integral tienden a abordar múltiples aspectos preventivos.
+
+
+La planificación familiar muestra correlaciones negativas con las tasas de natalidad y mortalidad adolescente, indicando que el acceso a métodos anticonceptivos modernos reduce significativamente estos riesgos. El uso de alcohol y tabaco entre adolescentes, tanto masculino como femenino, está débilmente relacionado con indicadores como mortalidad o planificación familiar, pero estas correlaciones negativas podrían implicar contextos con mejores intervenciones educativas y preventivas.
+
+El comportamiento físico insuficiente de los adolescentes no muestra fuertes correlaciones con otros indicadores, lo que sugiere que este aspecto podría depender de factores no representados en esta matriz, por lo que son más bien variables independientes.
+
+
+
+
+<font size="4"  face="Times New Roman"> <b> Proyecciones temporales y modelos predictivos </b> </font>
+
+El modelo ARIMA (Autoregressive Integrated Moving Average) es una herramienta estadística utilizada para analizar y predecir series temporales. En este caso, se utiliza para modelar y proyectar las muertes adolescentes a lo largo del tiempo, evaluando la estabilidad, tendencia y patrones de la serie de datos. A continuación realizaremos un modelo arima para proyectar los datos.
+
+Como ya sabemos, la mortalidad adolescente es un indicador clave del estado de los sistemas de salud, la calidad de vida y las desigualdades a nivel global. Durante las últimas décadas, los avances en diferentes áreas han logrado reducir las tasas de mortalidad en algunas regiones. Sin embargo, estas mejoras no han sido equitativas, dejando a ciertas regiones en desventaja y con tendencias preocupantes hacia el futuro.
+
+Comprender las tendencias históricas y proyectar escenarios futuros es esencial para diseñar intervenciones sostenibles. Este análisis no solo permite visualizar los avances logrados, sino también identificar los desafíos pendientes y planificar estrategias que se alineen con los Objetivos de Desarrollo Sostenible (ODS), especialmente el ODS 3, que busca garantizar una vida sana y promover el bienestar para todos.
+
+A continuación, las gráficas exploran las dinámicas de las muertes adolescentes desde el año 2000 hasta la actualidad, analizando tanto la evolución histórica como las proyecciones futuras desglosadas por continentes.
+
+
+```{r, echo=FALSE}
+serietemp1 <- muertesadolescentes %>% 
+hchart("line",hcaes(x = year, y = deaths, group = continent))%>%
+   hc_title(text = "Muertes adolescentes a lo largo del tiempo")
+serietemp1
+```
+
+
+Esta gráfica ilustra cómo las muertes adolescentes han evolucionado en cada continente a lo largo de las últimas dos décadas. Las tendencias reflejan la interacción de múltiples factores, incluidos avances médicos, desarrollo económico, cambios demográficos y eventos contextuales específicos, como epidemias o conflictos, pero omitiendo los datos de la covid para poder ver una tendencia temporal más realista.
+
+La gráfica cuenta con datos para cada año, y para ver los valores correspondientes basta con deslizar el cursor por encima, pudiendo eliminar asímismo los datos que no sean de interés en casos concretos, retomándolos cuando sean necesarios.
+
+Atendiendo a los resultados del diagrama, la línea azul la cual corresponde a África refleja un aumento constante en las muertes adolescentes. Esto subraya la necesidad urgente de inversiones estratégicas en la región o ayudas dedicadas exclusivamente a los problemas causantes de dichas muertes.
+
+Asia, representada en verde, muestra una tendencia descendente pronunciada, resultado de décadas de inversiones en infraestructura de salud. A pesar de esto, las cifras siguen siendo altas en comparación con regiones desarrolladas.
+
+América, representada en negro, mantiene una tendencia relativamente estable, reflejando una mezcla de mejoras en ciertos países y desafíos persistentes en otros, como la violencia y las desigualdades internas.
+
+Europa y Australia, con tasas mucho más bajas, ambas regiones destacan por sus sistemas de salud robustos, que han mantenido niveles estables y reducidos de mortalidad adolescente de una manera digna de admiración.
+
+En conjunto, esta gráfica pone en evidencia el progreso desigual entre los continentes, con África como la región más vulnerable, como siempre se ha sabido, y Asia liderando los avances en reducción de mortalidad.
+
+
+
+
+Por otro lado, los gráficos individuales por continente permiten analizar con mayor detalle las dinámicas específicas que han moldeado las tasas de mortalidad adolescente en cada región, pues se miden en función de su población.
+
+
+```{r, echo=FALSE}
+dinamico <- muertesadolescentes %>% 
+ggplot(aes(x=year,y=deaths)) +
+geom_line() +  
+facet_wrap(~continent,scales = "free")  +
+  labs(title = "Muertes adolescentes desde el año 2000", x = " ", y = "Muertes") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),  panel.spacing = unit(2.5, "cm"))
+
+ggplotly(dinamico)
+```
+
+
+África: El gráfico muestra un aumento drástico desde 2010, lo que podría estar relacionado con un crecimiento poblacional desproporcionado y conflictos prolongados.
+ 
+América: Un pico alrededor de 2010 sugiere posibles eventos relacionados con epidemias o violencia generalizada en ciertas regiones, bastante común en este continente. Sin embargo, la tendencia a largo plazo es relativamente estable.
+
+Asia: Refleja una disminución constante desde el año 2000, consolidando los avances en salud pública.
+
+Europa: La tendencia descendente constante subraya cómo los países europeos han logrado mantener niveles bajos de mortalidad adolescente mediante políticas preventivas.
+
+Australia: Aunque muestra pequeñas fluctuaciones, el nivel de mortalidad es consistentemente bajo, siendo muy buena señal de este indicador.
+
+
+
+Con estos datos de fallecimientos pasados, se puede predecir con un cierto nivel de certeza a qué tendencia de este indicador se enfrentarán los continentes en un futuro. En este caso, analizaremos los datos ya explicados de muertes y realizaremos una predicción con una ventana temporal de 20 años, hasta el 2040, de cómo evolucionarán estos datos, teniendo en cuenta que las bandas azules en las gráficas indican intervalos de confianza al 80% y 95%, mostrando los rangos de incertidumbre y posibles desviaciones. 
+
+
+```{r, echo=FALSE}
+fitcontinentes <- muertesadolescentes %>% 
+  group_by(continent)%>%
+  model(ETS(deaths))
+
+predicciontotal <- fitcontinentes |>
+  forecast(h = "20 years")
+
+predicciontotal |>
+  autoplot( muertesadolescentes%>%
+             filter(year>= year(as.Date("2000-01-01")))) +
+  facet_wrap(~ continent, scales = "free") +
+  labs(title = "Predicciones futuras de muertes adolescentes", x = "Año", y = "Muertes")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+La proyección para África muestra un aumento constante en el número de muertes adolescentes, alcanzando valores alarmantes hacia el año 2040. Este crecimiento refleja un escenario donde las condiciones actuales no solo persisten, sino que empeoran. Las bandas de predicción reflejan una alta incertidumbre debido a la naturaleza impredecible de los conflictos y desastres en la región, así como al impacto potencial de futuras intervenciones.
+
+
+América muestra una estabilización en la mortalidad adolescente con una ligera tendencia a la baja hacia 2040. Esto sugiere que, aunque los desafíos persisten, las políticas existentes están teniendo un impacto positivo. No obstante, países con altos ingresos como Estados Unidos y Canadá mantienen cifras bajas, mientras que América Latina y el Caribe enfrentan tasas más altas debido a la desigualdad socioeconómica. Además, los índices de violencia juvenil y accidentes de tránsito siguen siendo una causa significativa de mortalidad adolescente en esta región. El rango de incertidumbre es moderado, reflejando una relativa estabilidad en los sistemas de salud, pero con potencial para mejoras.
+
+
+Asia presenta una proyección descendente sostenida, consolidando las reducciones observadas desde 2000. Si estas tendencias continúan, el número de muertes adolescentes podría disminuir drásticamente para 2040. El rango de incertidumbre es bajo, lo que indica una consolidación de las políticas existentes y un progreso constante.
+
+
+Europa mantiene una proyección de estabilidad con niveles bajos de mortalidad adolescente. Esto, como llevamos observando durante todo el proyecto, refleja la madurez de sus sistemas de salud y políticas. Respecto al rango de incertidumbre, es mínimo, mostrando una alta predictibilidad en la evolución de la mortalidad.
+
+Por último, Australia presenta una proyección estable con pequeñas fluctuaciones, manteniendo cifras muy bajas de mortalidad adolescente como ha hecho hasta ahora.  El rango de incertidumbre es bajo, reflejando la estabilidad del continente y la gran certeza de continuación con las muertes mínimas.
+
+Este análisis subraya cómo la planificación basada en datos puede ser una herramienta poderosa para enfrentar las desigualdades globales y garantizar un futuro más equitativo para los adolescentes.
+
+
+
+
+<font size="5" face="Times New Roman"> <b> Cuadro de mandos </b> </font>
+
+Un cuadro de mandos es una herramienta visual e interactiva que permite monitorear, analizar y tomar decisiones basadas en datos clave. Los cuadros de mandos permiten observar el comportamiento de variables clave en tiempo real o a lo largo del tiempo, ayudan a localizar áreas con mayor vulnerabilidad y desigualdad, permitiendo priorizar intervenciones, proveen información clara y estructurada y facilitan la comparación entre regiones, países o períodos de tiempo, destacando tendencias y anomalías.
+
+Los cuadros de mandos son interactivos y permiten al usuario seleccionar diferentes indicadores para explorar datos específicos. En el caso de este proyecto, el cuadro de mandos está compuesto por:
+ 
+ + Mapa temático o mapa de atributos: Muestra una representación visual de los datos seleccionados a nivel global sobre un mapa mundi, utilizando colores para diferenciar los rangos de valores. Esta sección cuenta con un selector de indicadores a la izquierda, con el que el usuario puede elegir entre múltiples indicadores relacionados con la salud adolescente, como tasas de mortalidad, consumo de sustancias o planificación familiar. Debajo hay una lista de los valores relacionados con ese indicador seleccionado. Asímismo, tiene una leyenda, que se actualiza con cada indicador y proporciona información sobre los rangos de valores, a la vez que ayuda a interpretar el mapa.
+
+ 
+ + Comparación de atributos: Esta página del cuadro de mandos permite analizar la relación entre diferentes indicadores relacionados con la salud adolescente mediante gráficos de dispersión interactivos. Los usuarios pueden seleccionar dos indicadores o variables para compararlos y aplicar transformaciones escalares, como logarítmica o Box-Cox, para ajustar la visualización y explorar posibles patrones o correlaciones entre los datos. El gráfico muestra los valores de los dos indicadores seleccionados (eje X e Y), mientras que una tabla asociada en el lado derecho enumera los valores individuales para cada país, permitiendo un análisis numérico detallado de las diferencias entre regiones. 
+ 
+ 
+ + Evolución de muertes por continentes: Muestra cómo han cambiado las muertes adolescentes a lo largo del tiempo en las diferentes regiones del mundo, desde el año 2000 hasta la fecha más reciente disponible, 2022. A través de gráficos interactivos desglosados por continente, los usuarios pueden identificar tendencias, como aumentos, disminuciones o anomalías, en cada región. La interfaz incluye selectores que permiten elegir continentes específicos y ajustar el rango temporal para un análisis más detallado. Estos gráficos facilitan la comparación directa entre continentes, destacando patrones globales y regionales que ayudan a entender cómo la mortalidad adolescente varía en diferentes contextos geográficos y temporales.
+ 
+ 
+ + Matriz de correlación: Esta matriz de correlación visualiza las relaciones entre varios indicadores de salud adolescente. Cada celda de la matriz representa el coeficiente de correlación entre dos variables específicas, indicado por colores que van del azul al rojo. El azul representa una correlación negativa, el rojo una correlación positiva y el blanco indica una correlación cercana a cero.
+
+ 
+ + Análisis de Componentes Principales (ACP):
+Esta sección explora las relaciones entre los indicadores mediante el uso del Análisis de Componentes Principales (ACP o PCA). El ACP permite reducir la dimensionalidad del conjunto de datos, identificar patrones subyacentes y determinar los indicadores más relevantes para explicar la variabilidad de los datos. La sección está organizada en cuatro pestañas que brindan diferentes perspectivas del análisis:
+
+1. Atributos originales:
+Esta pestaña presenta los datos originales tal como están en el conjunto de datos, permitiendo una visualización clara de las variables antes de cualquier transformación.
+
+2. Atributos normalizados:
+En esta pestaña, los datos se presentan después de ser normalizados, lo que implica que todas las variables se transforman para tener una media de 0 y una desviación estándar de 1. Esto asegura que los indicadores con diferentes escalas no dominen el análisis y que todos contribuyan equitativamente al ACP.
+
+3. Componentes principales:
+Esta pestaña muestra los resultados del Análisis de Componentes Principales, que son combinaciones lineales de los indicadores originales que capturan la mayor cantidad de varianza en los datos.
+
+4. Varianza explicada:
+Aquí se visualiza el porcentaje de la varianza total de los datos que es explicado por cada componente principal. Un gráfico de barras resalta los componentes más importantes, mostrando cómo disminuye la cantidad de información capturada con cada componente adicional. Esto ayuda a decidir cuántos componentes principales son necesarios para representar adecuadamente los datos sin perder información significativa.
+
+
+
+ + Visualización 2D PCA: Muestra un gráfico que combina las observaciones (países) y los indicadores originales en el espacio reducido de los componentes principales, permitiendo identificar patrones y agrupaciones entre países. Los usuarios pueden seleccionar el componente principal para el eje X e Y, explorando cómo los datos se distribuyen en función de diferentes combinaciones. Los vectores de colores representan la influencia de cada indicador, mientras los puntos azules destacan la posición de los países. Este análisis simplifica la interpretación de datos multidimensionales, ayudando a detectar similitudes entre países e identificar indicadores clave en la salud adolescente.
+ 
+ 
+ + Predicciones futuras: Esta página del dasboard se divide en dos pestañas.
+ 
+ 1. Datos sobre muertes pasadas y actuales:
+Esta pestaña del cuadro de mandos presenta gráficos que muestran la evolución de las muertes adolescentes en diferentes continentes desde el año 2000 hasta la fecha más reciente disponible. Los gráficos están organizados por continente y permiten identificar patrones temporales.
+
+ 2. Predicción sobre muertes futuras:
+En esta pestaña, se visualizan las predicciones de muertes adolescentes hasta el año 2040 para cada continente. Los gráficos incluyen líneas que proyectan los valores futuros basados en modelos estadísticos, junto con bandas de confianza que indican la incertidumbre de las estimaciones (80% y 95%). Estas predicciones permiten evaluar cómo podrían evolucionar las tasas de mortalidad en las próximas décadas, proporcionando información clave para la planificación de políticas y estrategias de salud pública orientadas a mitigar la mortalidad adolescente en distintas regiones.
+
+
+
+
+
+
+
+<font size="5" color="900C3F" face="Times New Roman"> <b> CONCLUSIONES Y TRABAJOS FUTUROS </b> </font>
+
+
+
+El análisis de los datos sobre salud adolescente muestra resultados relevantes que destacan tanto los avances como los retos a nivel global. A continuación, se muestran las conclusiones que mejor expresan el análisis realizado:
+
+ + *Desigualdades regionales:*
+
+África y América Latina enfrentan los mayores desafíos en salud adolescente, con tasas preocupantes de mortalidad, maternidad temprana y consumo de alcohol y tabaco. Estas regiones no tienen sistemas de salud accesibles y eficaces, y se ven muy afectadas por factores socioeconómicos como la pobreza y la desigualdad de género.
+
+Europa, Asia y Oceanía destacan como regiones con los mejores indicadores, gracias a sus programas efectivos de vacunación, acceso a servicios de salud y políticas preventivas. Sin embargo, Europa enfrenta problemas relacionados con el consumo de alcohol y tabaco entre adolescentes, que se dan generalmente por normas culturales más permisivas.
+
+
+ + *Correlaciones identificadas:*
+
+Existe una relación directa entre pobreza, baja educación y resultados negativos en salud adolescente. En países con altos niveles de pobreza, los adolescentes tienen menos acceso a servicios de salud, educación sexual y programas preventivos, lo que agrava problemas como la mortalidad y la maternidad temprana. En el análisis también se aprecia que las adolescentes mujeres son mayormente afectadas por estas desigualdades, lo que muestra la importancia de abordar la salud desde una perspectiva de género en ciertas situaciones.
+
+
+ + *Predicciones futuras:*
+
+Los modelos predictivos mostrados en el proyecto anticipan un aumento en las muertes adolescentes en África, probablemente debido a enfermedades transmisibles y falta de infraestructuras sanitarias. En América, se espera una estabilización en la tasa de mortalidad, aunque continúan los problemas relacionados con la maternidad adolescente. Europa y Asia muestran mejoras en la mayoría de los indicadores. Sin embargo, en Europa podría observarse un ligero aumento en el consumo de sustancias si no se adoptan medidas preventivas más estrictas.
+
+
+ + *Grado de consecución de objetivos:*
+
+Los objetivos se cumplieron en su totalidad. Se mostraron herramientas visuales y predictivas que permiten comprender las desigualdades y las tendencias globales de salud adolescente para hacer hincapié en aquellos indicadores más desproporcionados y los países menos agraciados. Los patrones, las correlaciones y los modelos predictivos han ayudado a establecer una base sólida para futuras investigaciones.
+
+
+
+
+
+
+
+Por otro lado, a pesar de los objetivos alcanzados, este proyecto abre la puerta a nuevas áreas de investigación y acciones concretas. Entre los posibles trabajos futuros destacan:
+
+ + Impacto de la pandemia: Incluir datos posteriores a la covid para evaluar su impacto en la salud adolescente, especialmente en términos de salud mental, acceso a servicios de salud y educación sexual.
+ 
+ + Ampliación temática: Integrar nuevos indicadores, como salud mental, violencia y efectos del cambio climático en la población joven.
+ 
+ + Colaboraciones globales: Trabajar con instituciones internacionales para diseñar políticas basadas en estos hallazgos.
+ 
+ + Desarrollo de intervenciones: Utilizar los resultados para diseñar estrategias específicas que aborden las desigualdades identificadas, priorizando las regiones más afectadas.
+ 
+ 
+ 
+ 
